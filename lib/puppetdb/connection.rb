@@ -9,10 +9,11 @@ class PuppetDB::Connection
 
   include Puppet::Util::Logging
 
-  def initialize(host = 'puppetdb', port = 443, use_ssl = true)
+  def initialize(host = 'puppetdb', port = 443, use_ssl = true, puppetdb_version = 3)
     @host = host
     @port = port
     @use_ssl = use_ssl
+    @puppetdb_version = puppetdb_version
   end
 
   def self.check_version
@@ -59,9 +60,16 @@ EOT
       query = PuppetDB::ParserHelper.extract(*Array(options[:extract]), query)
     end
 
-    uri = "/pdb/query/#{version}/#{endpoint}"
+    uri = ""
+    # https://docs.puppetlabs.com/puppetdb/latest/api/query/v4/upgrading-from-v3.html#changes-affecting-all-endpoints
+    if @puppetdb_version.to_s() == "3"
+      uri += "/pdb/query"
+    end
+
+    uri += "/#{version}/#{endpoint}"
     uri += URI.escape "?query=#{query.to_json}" unless query.nil? || query.empty?
 
+    debug("PuppetDB query uri: #{uri}")
     debug("PuppetDB query: #{query.to_json}")
 
     resp = http.get(uri, headers)

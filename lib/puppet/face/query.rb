@@ -26,6 +26,11 @@ Puppet::Face.define(:query, '1.0.0') do
     default_to { !Puppet::Application::Query.setting[:use_ssl] }
   end
 
+  option '--puppetdb_version VERSION' do
+    summary 'Specify puppetdb version. Defaults to 3.'
+    default_to { Puppet::Application::Query.setting[:puppetdb_version] }
+  end
+
   action :facts do
     summary 'Serves as an interface to puppetdb allowing a user to query for a list of nodes'
 
@@ -45,7 +50,7 @@ Puppet::Face.define(:query, '1.0.0') do
     end
 
     when_invoked do |query, options|
-      puppetdb = PuppetDB::Connection.new options[:host], options[:port], !options[:no_ssl]
+      puppetdb = PuppetDB::Connection.new options[:host], options[:port], !options[:no_ssl], options[:puppetdb_version]
       parser = PuppetDB::Parser.new
       if options[:facts] != ''
         factquery = parser.facts_query(query, options[:facts].split(','))
@@ -73,7 +78,7 @@ Puppet::Face.define(:query, '1.0.0') do
     end
 
     when_invoked do |query, options|
-      puppetdb = PuppetDB::Connection.new options[:host], options[:port], !options[:no_ssl]
+      puppetdb = PuppetDB::Connection.new options[:host], options[:port], !options[:no_ssl], options[:puppetdb_version]
       parser = PuppetDB::Parser.new
       query = parser.parse(query, :nodes)
 
@@ -128,7 +133,7 @@ Puppet::Face.define(:query, '1.0.0') do
         raise
       end
 
-      puppetdb = PuppetDB::Connection.new options[:host], options[:port], !options[:no_ssl]
+      puppetdb = PuppetDB::Connection.new options[:host], options[:port], !options[:no_ssl], options[:puppetdb_version]
       parser = PuppetDB::Parser.new
       nodes = puppetdb.query(:nodes, parser.parse(query, :nodes)).collect { |n| n['certname'] }
       starttime = Chronic.parse(options[:since], :context => :past, :guess => false).first.getutc.strftime('%FT%T.000Z')
